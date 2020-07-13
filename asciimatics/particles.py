@@ -717,9 +717,9 @@ class StarFirework(ParticleEffect):
     """
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next))
+        self._active_systems = [
+            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next)
+        ]
 
     def _next(self, parent):
         self._active_systems.append(
@@ -743,9 +743,9 @@ class RingFirework(ParticleEffect):
     """
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next))
+        self._active_systems = [
+            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next)
+        ]
 
     def _next(self, parent):
         self._active_systems.append(RingExplosion(
@@ -758,9 +758,9 @@ class SerpentFirework(ParticleEffect):
     """
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next))
+        self._active_systems = [
+            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next)
+        ]
 
     def _next(self, parent):
         self._active_systems.append(SerpentExplosion(
@@ -773,9 +773,9 @@ class PalmFirework(ParticleEffect):
     """
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next))
+        self._active_systems = [
+            Rocket(self._screen, self._x, self._y, 10, on_destroy=self._next)
+        ]
 
     def _next(self, parent):
         self._active_systems.append(PalmExplosion(
@@ -798,9 +798,9 @@ class Explosion(ParticleEffect):
     """
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            ExplosionFlames(self._screen, self._x, self._y, self._life_time))
+        self._active_systems = [
+            ExplosionFlames(self._screen, self._x, self._y, self._life_time)
+        ]
 
 
 class DropScreen(ParticleEffect):
@@ -816,9 +816,7 @@ class DropScreen(ParticleEffect):
         super(DropScreen, self).__init__(screen, 0, 0, life_time, **kwargs)
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            DropEmitter(self._screen, self._life_time))
+        self._active_systems = [DropEmitter(self._screen, self._life_time)]
 
 
 class ShootScreen(ParticleEffect):
@@ -827,9 +825,9 @@ class ShootScreen(ParticleEffect):
     """
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            ShotEmitter(self._screen, self._x, self._y, self._life_time))
+        self._active_systems = [
+            ShotEmitter(self._screen, self._x, self._y, self._life_time)
+        ]
 
 
 class Rain(ParticleEffect):
@@ -845,9 +843,9 @@ class Rain(ParticleEffect):
         super(Rain, self).__init__(screen, 0, 0, life_time, **kwargs)
 
     def reset(self):
-        self._active_systems = []
-        self._active_systems.append(
-            RainSource(self._screen, self._life_time, self._collision))
+        self._active_systems = [
+            RainSource(self._screen, self._life_time, self._collision)
+        ]
 
     def _collision(self, particle):
         # Already calculated new position, so go back in history

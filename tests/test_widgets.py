@@ -81,10 +81,9 @@ class TestFrame(Frame):
         changed = False
         self.save()
         for key, value in self.data.items():
-            if isinstance(value, bool):
-                if value:
-                    changed = True
-                    break
+            if isinstance(value, bool) and value:
+                changed = True
+                break
             if isinstance(value, int):
                 if value != 1:
                     changed = True

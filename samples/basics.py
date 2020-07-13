@@ -133,11 +133,14 @@ def demo(screen):
     # Scene 6.
     path = Path()
     path.jump_to(podium[0], podium[1])
-    curve_path = []
-    for i in range(0, 11):
-        curve_path.append(
-            (centre[0] + (screen.width / 4 * math.sin(i * math.pi / 5)),
-             centre[1] - (screen.height / 4 * math.cos(i * math.pi / 5))))
+    curve_path = [
+        (
+            centre[0] + (screen.width / 4 * math.sin(i * math.pi / 5)),
+            centre[1] - (screen.height / 4 * math.cos(i * math.pi / 5)),
+        )
+        for i in range(11)
+    ]
+
     path2 = Path()
     path2.jump_to(centre[0], centre[1] - screen.height // 4)
     path2.move_round_to(curve_path, 60)

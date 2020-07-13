@@ -334,7 +334,7 @@ class Print(Effect):
         self._frame_no = frame_no
         if self._clear and \
                 (frame_no == self._stop_frame - 1) or (self._delete_count == 1):
-            for i in range(0, self._renderer.max_height):
+            for i in range(self._renderer.max_height):
                 self._screen.print_at(" " * self._renderer.max_width,
                                       self._x,
                                       self._y + i,
@@ -532,13 +532,12 @@ class _Trail(object):
         :param reseed: Whether we are in the normal reseed cycle or not.
         """
         if self._clear:
-            for i in range(0, 3):
+            for i in range(3):
                 self._screen.print_at(" ",
                                       self._x,
                                       self._screen.start_line + self._y + i)
-            self._maybe_reseed(reseed)
         else:
-            for i in range(0, 3):
+            for i in range(3):
                 self._screen.print_at(chr(randint(32, 126)),
                                       self._x,
                                       self._screen.start_line + self._y + i,
@@ -549,7 +548,8 @@ class _Trail(object):
                                       self._screen.start_line + self._y + i,
                                       Screen.COLOUR_GREEN,
                                       Screen.A_BOLD)
-            self._maybe_reseed(reseed)
+
+        self._maybe_reseed(reseed)
 
 
 class Matrix(Effect):
@@ -677,70 +677,73 @@ class Sprite(Effect):
 
         x2, y2, w2, h2 = other.last_position()
 
-        if ((x > x2 + w2 - 1) or (x2 > x + w - 1) or
-                (y > y2 + h2 - 1) or (y2 > y + h - 1)):
-            return False
-        else:
-            return True
+        return (
+            x <= x2 + w2 - 1
+            and x2 <= x + w - 1
+            and y <= y2 + h2 - 1
+            and y2 <= y + h - 1
+        )
 
     def _update(self, frame_no):
-        if frame_no % 2 == 0:
+        if frame_no % 2 != 0:
+            return
+
             # Blank out the old sprite if moved.
-            if (self._clear and
+        if (self._clear and
                     self._old_x is not None and self._old_y is not None):
-                for i in range(0, self._old_height):
-                    self._screen.print_at(
-                        " " * self._old_width, self._old_x, self._old_y + i, 0)
+            for i in range(self._old_height):
+                self._screen.print_at(
+                    " " * self._old_width, self._old_x, self._old_y + i, 0)
 
-            # Don't draw a new one if we're about to stop the Sprite.
-            if self._delete_count is not None and self._delete_count <= 2:
-                return
+        # Don't draw a new one if we're about to stop the Sprite.
+        if self._delete_count is not None and self._delete_count <= 2:
+            return
 
-            # Figure out the direction of the sprite, if enough time has
-            # elapsed.
-            (x, y) = self._path.next_pos()
-            if self._dir_count % 3 == 0:
-                direction = None
-                if self._dir_x is not None:
-                    dx = (x - self._dir_x) // 2
-                    dy = y - self._dir_y
-                    if dx * dx > dy * dy:
-                        direction = "left" if dx < 0 else "right"
-                    elif dx == 0 and dy == 0:
-                        direction = "default"
-                    else:
-                        direction = "up" if dy < 0 else "down"
-                self._dir_x = x
-                self._dir_y = y
-            else:
-                direction = self._old_direction
-            self._dir_count += 1
+        # Figure out the direction of the sprite, if enough time has
+        # elapsed.
+        (x, y) = self._path.next_pos()
+        if self._dir_count % 3 == 0:
+            direction = None
+            if self._dir_x is not None:
+                dx = (x - self._dir_x) // 2
+                dy = y - self._dir_y
+                if dx * dx > dy * dy:
+                    direction = "left" if dx < 0 else "right"
+                elif dx == 0 and dy == 0:
+                    direction = "default"
+                else:
+                    direction = "up" if dy < 0 else "down"
+            self._dir_x = x
+            self._dir_y = y
+        else:
+            direction = self._old_direction
+        self._dir_count += 1
 
-            # If no data - pick the default
-            if direction not in self._renderer_dict:
-                direction = "default"
+        # If no data - pick the default
+        if direction not in self._renderer_dict:
+            direction = "default"
 
-            # Now we've done the directions, centre the sprite on the path.
-            x -= self._renderer_dict[direction].max_width // 2
-            y -= self._renderer_dict[direction].max_height // 2
+        # Now we've done the directions, centre the sprite on the path.
+        x -= self._renderer_dict[direction].max_width // 2
+        y -= self._renderer_dict[direction].max_height // 2
 
-            # Update the path index for the sprite if needed.
-            if self._path.is_finished():
-                self._path.reset()
+        # Update the path index for the sprite if needed.
+        if self._path.is_finished():
+            self._path.reset()
 
-            # Draw the new sprite.
-            # self._screen.print_at(str(x)+","+str(y)+" ", 0, 0)
-            image, colours = self._renderer_dict[direction].rendered_text
-            for (i, line) in enumerate(image):
-                self._screen.paint(line, x, y + i, self._colour,
-                                   colour_map=colours[i])
+        # Draw the new sprite.
+        # self._screen.print_at(str(x)+","+str(y)+" ", 0, 0)
+        image, colours = self._renderer_dict[direction].rendered_text
+        for (i, line) in enumerate(image):
+            self._screen.paint(line, x, y + i, self._colour,
+                               colour_map=colours[i])
 
-            # Remember what we need to clear up next frame.
-            self._old_width = self._renderer_dict[direction].max_width
-            self._old_height = self._renderer_dict[direction].max_height
-            self._old_direction = direction
-            self._old_x = x
-            self._old_y = y
+        # Remember what we need to clear up next frame.
+        self._old_width = self._renderer_dict[direction].max_width
+        self._old_height = self._renderer_dict[direction].max_height
+        self._old_direction = direction
+        self._old_x = x
+        self._old_y = y
 
     @property
     def stop_frame(self):

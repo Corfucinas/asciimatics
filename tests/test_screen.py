@@ -651,18 +651,16 @@ class TestScreen(unittest.TestCase):
                 event.VirtualKeyCode = ord(chr(char).upper())
             else:
                 # Lookup in mapping dicts
-                reverse = dict((v, k) for k, v in
-                               screen._EXTRA_KEY_MAP.items())
-                if char in reverse:
-                    event.VirtualKeyCode = reverse[char]
-                else:
+                reverse = {v: k for k, v in
+                                           screen._EXTRA_KEY_MAP.items()}
+                if char not in reverse:
                     # Fudge key state required for BACK_TAB if needed.
                     if char == Screen.KEY_BACK_TAB:
                         char = Screen.KEY_TAB
                         event.ControlKeyState = win32con.SHIFT_PRESSED
-                    reverse = dict((v, k) for k, v in
-                                   screen._KEY_MAP.items())
-                    event.VirtualKeyCode = reverse[char]
+                    reverse = {v: k for k, v in
+                                                   screen._KEY_MAP.items()}
+                event.VirtualKeyCode = reverse[char]
             event.KeyDown = 1
             screen._stdin.WriteConsoleInput([event])
             event.KeyDown = 0
@@ -675,8 +673,8 @@ class TestScreen(unittest.TestCase):
                 for c in reversed(bytes(chr(char).encode("utf-8"))):
                     curses.ungetch(c)
             else:
-                reverse = dict((v, k) for k, v in
-                               screen._KEY_MAP.items())
+                reverse = {v: k for k, v in
+                                           screen._KEY_MAP.items()}
                 curses.ungetch(reverse[char])
 
     @staticmethod

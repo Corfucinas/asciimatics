@@ -17,7 +17,7 @@ def _credits(screen):
     scenes = []
 
     text = Figlet(font="banner", width=200).renderText("ASCIIMATICS")
-    width = max([len(x) for x in text.split("\n")])
+    width = max(len(x) for x in text.split("\n"))
 
     effects = [
         Print(screen,

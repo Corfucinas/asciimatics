@@ -335,12 +335,14 @@ def cycle():
 class PacMan(Sprite):
     def __init__(self, screen, path, start_frame=0, stop_frame=0):
         images = []
-        images_right = []
         colour = Screen.COLOUR_YELLOW if screen.colours <= 16 else 11
         for image in pac_man:
             images.append(image.format("${%d,2,%d}" % (colour, colour)))
-        for image in pac_man_right:
-            images_right.append(image.format("${%d,2,%d}" % (colour, colour)))
+        images_right = [
+            image.format("${%d,2,%d}" % (colour, colour))
+            for image in pac_man_right
+        ]
+
         super(PacMan, self).__init__(
             screen,
             renderer_dict={
@@ -361,9 +363,7 @@ class PacMan(Sprite):
 
 class Ghost(Sprite):
     def __init__(self, screen, path, colour=1, start_frame=0, stop_frame=0):
-        images = []
-        for image in ghost:
-            images.append(image.format("${%d,2,%d}" % (colour, colour)))
+        images = [image.format("${%d,2,%d}" % (colour, colour)) for image in ghost]
         super(Ghost, self).__init__(
             screen,
             renderer_dict={

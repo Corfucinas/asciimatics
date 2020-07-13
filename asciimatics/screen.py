@@ -124,7 +124,7 @@ class _DoubleBuffer(object):
         if lines > 0:
             # Limit to buffer size - this will just invalidate all the data
             lines = min(lines, self._height)
-            for y in range(0, self._height - lines):
+            for y in range(self._height - lines):
                 self._double_buffer[y] = self._double_buffer[y + lines]
                 self._screen_buffer[y] = self._screen_buffer[y + lines]
             for y in range(self._height - lines, self._height):
@@ -133,7 +133,7 @@ class _DoubleBuffer(object):
         else:
             # Limit to buffer size - this will just invalidate all the data
             lines = max(lines, -self._height)
-            for y in range(0, -lines):
+            for y in range(-lines):
                 self._double_buffer[self._height + lines + y] = line[:]
                 self._screen_buffer[y] = line[:]
             for y in range(self._height - 1, -lines, -1):
@@ -157,7 +157,7 @@ class _DoubleBuffer(object):
             return
 
         # Copy the available section
-        for by in range(0, self._height):
+        for by in range(self._height):
             if y <= by < y + buffer.height:
                 self._double_buffer[by][block_min_x:block_max_x] = buffer.slice(
                     block_min_x - x, by - y, block_max_x - block_min_x)
@@ -620,7 +620,10 @@ class _AbstractCanvas(with_metaclass(ABCMeta, object)):
                     # Now handle the update.
                     if c != " " or not transparent:
                         # Fix up orphaned double-width glyphs that we've just bisected.
-                        if x + i + j - 1 >= 0 and self._buffer.get(x + i + j - 1, y)[4] == 2:
+                        if (
+                            x + i + j >= 1
+                            and self._buffer.get(x + i + j - 1, y)[4] == 2
+                        ):
                             self._buffer.set(x + i + j - 1, y, ("x", 0, 0, 0, 1))
 
                         self._buffer.set(x + i + j, y, (c, colour, attr, bg, width))
@@ -1546,11 +1549,10 @@ class Screen(with_metaclass(ABCMeta, _AbstractCanvas)):
             while True:
                 a = time.time()
                 self.draw_next_frame(repeat=repeat)
-                if self.has_resized():
-                    if stop_on_resize:
-                        self._scenes[self._scene_index].exit()
-                        raise ResizeScreenError("Screen resized",
-                                                self._scenes[self._scene_index])
+                if self.has_resized() and stop_on_resize:
+                    self._scenes[self._scene_index].exit()
+                    raise ResizeScreenError("Screen resized",
+                                            self._scenes[self._scene_index])
                 b = time.time()
                 if b - a < 0.05:
                     # Just in case time has jumped (e.g. time change), ensure we only delay for 0.05s

@@ -201,7 +201,7 @@ class StaticRenderer(Renderer):
 
         if self._max_width == 0:
             for image in self._plain_images:
-                new_max = max([wcswidth(x) for x in image])
+                new_max = max(wcswidth(x) for x in image)
                 self._max_width = max(new_max, self._max_width)
         return self._max_width
 
@@ -344,9 +344,9 @@ class ImageFile(StaticRenderer):
                     (int(frame.size[0] * height * 2.0 / frame.size[1]), height),
                     Image.BICUBIC)
                 grey_frame = frame.convert('L')
-                for py in range(0, grey_frame.size[1]):
+                for py in range(grey_frame.size[1]):
                     ascii_image += "\n"
-                    for px in range(0, grey_frame.size[0]):
+                    for px in range(grey_frame.size[0]):
                         real_col = frame.getpixel((px, py))
                         col = grey_frame.getpixel((px, py))
                         if real_col == background:
@@ -434,7 +434,7 @@ class ColourImageFile(StaticRenderer):
                     if uni:
                         ascii_image += "${%d,2,%d}." % (bg, bg)
                     ascii_image += "\n"
-                    for px in range(0, new_frame.size[0]):
+                    for px in range(new_frame.size[0]):
                         real_col = frame.getpixel((px, py))
                         real_col2 = (frame.getpixel((px, py + 1)) if uni else
                                      real_col)
@@ -469,7 +469,7 @@ class SpeechBubble(StaticRenderer):
                      "R" for left or right tails.  Can be None for no tail.
         """
         super(SpeechBubble, self).__init__()
-        max_len = max([wcswidth(x) for x in text.split("\n")])
+        max_len = max(wcswidth(x) for x in text.split("\n"))
         if uni:
             bubble = "╭─" + "─" * max_len + "─╮\n"
             for line in text.split("\n"):
@@ -638,7 +638,7 @@ class BarChart(DynamicRenderer):
 
         # Make room for the keys if supplied.
         if self._keys:
-            width = max([len(x) for x in self._keys])
+            width = max(len(x) for x in self._keys)
             key_x = start_x
             int_w -= width + 1
             start_x += width + 1
@@ -954,11 +954,10 @@ class RotatedDuplicate(StaticRenderer):
         """
         super(RotatedDuplicate, self).__init__()
         for image in renderer.images:
-            mx = (width - max([len(x) for x in image])) // 2
+            mx = (width - max(len(x) for x in image)) // 2
             my = height // 2 - len(image)
             tab = (" " * mx if mx > 0 else "") + "\n" + (" " * mx if mx > 0 else "")
-            new_image = []
-            new_image.extend(["" for _ in range(max(0, my))])
+            new_image = ["" for _ in range(max(0, my))]
             new_image.extend(image)
             new_image.extend([x[::-1] for x in reversed(image)])
             new_image.extend(["" for _ in range(max(0, my))])

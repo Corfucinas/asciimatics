@@ -80,12 +80,12 @@ class DemoFrame(Frame):
         self.fix()
 
     def _on_change(self):
-        changed = False
         self.save()
-        for key, value in self.data.items():
-            if key not in form_data or form_data[key] != value:
-                changed = True
-                break
+        changed = any(
+            key not in form_data or form_data[key] != value
+            for key, value in self.data.items()
+        )
+
         self._reset_button.disabled = not changed
 
     def _reset(self):
