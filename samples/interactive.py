@@ -17,22 +17,21 @@ cross_hairs = None
 
 class KeyboardController(DynamicPath):
     def process_event(self, event):
-        if isinstance(event, KeyboardEvent):
-            key = event.key_code
-            if key == Screen.KEY_UP:
-                self._y -= 1
-                self._y = max(self._y, 2)
-            elif key == Screen.KEY_DOWN:
-                self._y += 1
-                self._y = min(self._y, self._screen.height-2)
-            elif key == Screen.KEY_LEFT:
-                self._x -= 1
-                self._x = max(self._x, 3)
-            elif key == Screen.KEY_RIGHT:
-                self._x += 1
-                self._x = min(self._x, self._screen.width-3)
-            else:
-                return event
+        if not isinstance(event, KeyboardEvent):
+            return event
+        key = event.key_code
+        if key == Screen.KEY_UP:
+            self._y -= 1
+            self._y = max(self._y, 2)
+        elif key == Screen.KEY_DOWN:
+            self._y += 1
+            self._y = min(self._y, self._screen.height-2)
+        elif key == Screen.KEY_LEFT:
+            self._x -= 1
+            self._x = max(self._x, 3)
+        elif key == Screen.KEY_RIGHT:
+            self._x += 1
+            self._x = min(self._x, self._screen.width-3)
         else:
             return event
 

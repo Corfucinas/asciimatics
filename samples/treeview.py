@@ -62,9 +62,12 @@ class DemoFrame(Frame):
 
     def process_event(self, event):
         # Do the key handling for this Frame.
-        if isinstance(event, KeyboardEvent):
-            if event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
-                raise StopApplication("User quit")
+        if isinstance(event, KeyboardEvent) and event.key_code in [
+            ord('q'),
+            ord('Q'),
+            Screen.ctrl("c"),
+        ]:
+            raise StopApplication("User quit")
 
         # Now pass on to lower levels for normal handling of the event.
         return super(DemoFrame, self).process_event(event)

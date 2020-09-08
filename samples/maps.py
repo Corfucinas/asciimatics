@@ -302,9 +302,11 @@ class Map(Effect):
 
     def _draw_polygons(self, feature, bg, colour, extent, polygons, xo, yo):
         """Draw a set of polygons from a vector tile."""
-        coords = []
-        for polygon in polygons:
-            coords.append([self._scale_coords(x, y, extent, xo, yo) for x, y in polygon])
+        coords = [
+            [self._scale_coords(x, y, extent, xo, yo) for x, y in polygon]
+            for polygon in polygons
+        ]
+
         # Polygons are expensive to draw and the buildings layer is huge - so we convert to
         # lines in order to process updates fast enough to animate.
         if "type" in feature["properties"] and "building" in feature["properties"]["type"]:
@@ -323,15 +325,15 @@ class Map(Effect):
         geometry = feature["geometry"]
         if geometry["type"] == "Polygon":
             self._draw_polygons(feature, bg, colour, extent, geometry["coordinates"], xo, yo)
-        elif feature["geometry"]["type"] == "MultiPolygon":
+        elif geometry["type"] == "MultiPolygon":
             for multi_polygon in geometry["coordinates"]:
                 self._draw_polygons(feature, bg, colour, extent, multi_polygon, xo, yo)
-        elif feature["geometry"]["type"] == "LineString":
+        elif geometry["type"] == "LineString":
             self._draw_lines(bg, colour, extent, geometry["coordinates"], xo, yo)
-        elif feature["geometry"]["type"] == "MultiLineString":
+        elif geometry["type"] == "MultiLineString":
             for line in geometry["coordinates"]:
                 self._draw_lines(bg, colour, extent, line, xo, yo)
-        elif feature["geometry"]["type"] == "Point":
+        elif geometry["type"] == "Point":
             x, y = self._scale_coords(
                 geometry["coordinates"][0], geometry["coordinates"][1], extent, xo, yo)
             text = u" {} ".format(feature["properties"]["name_en"])
@@ -484,43 +486,45 @@ class Map(Effect):
 
     def process_event(self, event):
         """User input for the main map view."""
-        if isinstance(event, KeyboardEvent):
-            if event.key_code in [Screen.ctrl("m"), Screen.ctrl("j")]:
-                self._scene.add_effect(
-                    EnterLocation(
-                        self._screen, self._longitude, self._latitude, self._on_new_location))
-            elif event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
-                raise StopApplication("User quit")
-            elif event.key_code in [ord('t'), ord('T')]:
-                self._satellite = not self._satellite
-                if self._satellite:
-                    self._size = _START_SIZE
-            elif event.key_code == ord("?"):
-                self._scene.add_effect(PopUpDialog(self._screen, _HELP, ["OK"]))
-            elif event.key_code == ord("+") and self._zoom <= 20:
-                if self._desired_zoom < 20:
-                    self._desired_zoom += 1
-            elif event.key_code == ord("-") and self._zoom >= 0:
-                if self._desired_zoom > 0:
-                    self._desired_zoom -= 1
-            elif event.key_code == ord("0"):
-                self._desired_zoom = 0
-            elif event.key_code == ord("9"):
-                self._desired_zoom = 20
-            elif event.key_code == Screen.KEY_LEFT:
-                self._desired_longitude -= 360 / 2 ** self._zoom / self._size * 10
-            elif event.key_code == Screen.KEY_RIGHT:
-                self._desired_longitude += 360 / 2 ** self._zoom / self._size * 10
-            elif event.key_code == Screen.KEY_UP:
-                self._desired_latitude = self._inc_lat(self._desired_latitude, -self._size / 10)
-            elif event.key_code == Screen.KEY_DOWN:
-                self._desired_latitude = self._inc_lat(self._desired_latitude, self._size / 10)
-            else:
-                return
+        if not isinstance(event, KeyboardEvent):
+            return
 
-            # Trigger a reload of the tiles and redraw map
-            self._updated.set()
-            self._screen.force_update()
+        if event.key_code in [Screen.ctrl("m"), Screen.ctrl("j")]:
+            self._scene.add_effect(
+                EnterLocation(
+                    self._screen, self._longitude, self._latitude, self._on_new_location))
+        elif event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
+            raise StopApplication("User quit")
+        elif event.key_code in [ord('t'), ord('T')]:
+            self._satellite = not self._satellite
+            if self._satellite:
+                self._size = _START_SIZE
+        elif event.key_code == ord("?"):
+            self._scene.add_effect(PopUpDialog(self._screen, _HELP, ["OK"]))
+        elif event.key_code == ord("+") and self._zoom <= 20:
+            if self._desired_zoom < 20:
+                self._desired_zoom += 1
+        elif event.key_code == ord("-") and self._zoom >= 0:
+            if self._desired_zoom > 0:
+                self._desired_zoom -= 1
+        elif event.key_code == ord("0"):
+            self._desired_zoom = 0
+        elif event.key_code == ord("9"):
+            self._desired_zoom = 20
+        elif event.key_code == Screen.KEY_LEFT:
+            self._desired_longitude -= 360 / 2 ** self._zoom / self._size * 10
+        elif event.key_code == Screen.KEY_RIGHT:
+            self._desired_longitude += 360 / 2 ** self._zoom / self._size * 10
+        elif event.key_code == Screen.KEY_UP:
+            self._desired_latitude = self._inc_lat(self._desired_latitude, -self._size / 10)
+        elif event.key_code == Screen.KEY_DOWN:
+            self._desired_latitude = self._inc_lat(self._desired_latitude, self._size / 10)
+        else:
+            return
+
+        # Trigger a reload of the tiles and redraw map
+        self._updated.set()
+        self._screen.force_update()
 
     def _on_new_location(self, form):
         """Set a new desired location entered in the pop-up form."""

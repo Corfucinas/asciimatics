@@ -85,7 +85,7 @@ class ControlCodeParser(Parser):
         :param colours: colour tuple to initialise the colour map.
         """
         super(ControlCodeParser, self).reset(text, colours)
-        attributes = (x for x in self._attributes) if self._attributes else (None, None, None)
+        attributes = iter(self._attributes) if self._attributes else (None, None, None)
         for i, letter in enumerate(text):
             if ord(letter) < 32:
                 self._result.append(

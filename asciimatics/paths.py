@@ -126,7 +126,7 @@ class Path(_AbstractPath):
 
         :param delay: The time to wait (in animation frames).
         """
-        for _ in range(0, delay):
+        for _ in range(delay):
             self._add_step((self._rec_x, self._rec_y))
 
     def jump_to(self, x, y):

@@ -204,8 +204,8 @@ def _get_offset(text, visible_width, unicode_aware=True):
     :return: The offset within text (as a character offset within the string).
     """
     result = 0
-    width = 0
     if unicode_aware:
+        width = 0
         for c in text:
             if visible_width - width <= 0:
                 break
@@ -716,7 +716,7 @@ class Frame(Effect):
                 invalid.extend(exc.fields)
 
         # Check for any bad data and raise exception if needed.
-        if len(invalid) > 0:
+        if invalid:
             raise InvalidFields(invalid)
 
     def switch_focus(self, layout, column, widget):
@@ -870,9 +870,12 @@ class Frame(Effect):
                         return None
 
                 # If no joy, check whether the scroll bar was clicked.
-                if self._has_border and self._can_scroll:
-                    if self._scroll_bar.process_event(event):
-                        return None
+                if (
+                    self._has_border
+                    and self._can_scroll
+                    and self._scroll_bar.process_event(event)
+                ):
+                    return None
 
         # Don't allow events to bubble down if this window owns the Screen (as already
         # calculated when taking te focus) or if the Frame is modal or we handled the
@@ -1040,7 +1043,7 @@ class Layout(object):
             # For each column determine if we need a tab offset for labels.
             # Only allow labels to take up 1/3 of the column.
             if len(column) > 0:
-                offset = max([0 if c.label is None else string_len(c.label) + 1 for c in column])
+                offset = max(0 if c.label is None else string_len(c.label) + 1 for c in column)
             else:
                 offset = 0
             offset = int(min(offset,
@@ -1058,20 +1061,23 @@ class Layout(object):
             w = int(width * self._column_sizes[i])
             for widget in column:
                 h = widget.required_height(offset, w)
-                if h == Widget.FILL_FRAME:
-                    if fill_layout is None and fill_column is None:
-                        dimensions[i].parameters.append([widget, x, w, h])
-                        fill_layout = widget
-                    else:
-                        # Two filling widgets in one column - this is a bug.
-                        raise Highlander("Too many Widgets filling Layout")
+                if (
+                    h == Widget.FILL_FRAME
+                    and fill_layout is None
+                    and fill_column is None
+                ):
+                    dimensions[i].parameters.append([widget, x, w, h])
+                    fill_layout = widget
+                elif (
+                    h == Widget.FILL_FRAME
+                    or h == Widget.FILL_COLUMN
+                    and (fill_layout is not None or fill_column is not None)
+                ):
+                    # Two filling widgets in one column - this is a bug.
+                    raise Highlander("Too many Widgets filling Layout")
                 elif h == Widget.FILL_COLUMN:
-                    if fill_layout is None and fill_column is None:
-                        dimensions[i].parameters.append([widget, x, w, h])
-                        fill_column = widget
-                    else:
-                        # Two filling widgets in one column - this is a bug.
-                        raise Highlander("Too many Widgets filling Layout")
+                    dimensions[i].parameters.append([widget, x, w, h])
+                    fill_column = widget
                 else:
                     dimensions[i].parameters.append([widget, x, w, h])
                     y += h
@@ -1142,10 +1148,7 @@ class Layout(object):
             # looking if we're allowed to wrap.
             still_looking = wrap
             if still_looking:
-                if self._live_col < 0:
-                    self._live_col = len(self._columns) - 1
-                else:
-                    self._live_col = 0
+                self._live_col = len(self._columns) - 1 if self._live_col < 0 else 0
 
     def process_event(self, event, hover_focus):
         """
@@ -1159,8 +1162,8 @@ class Layout(object):
         if self._live_col < 0 or self._live_widget < 0:
             # Might just be that we've unset the focus - so check we can't find a focus.
             self._find_next_widget(1)
-            if self._live_col < 0 or self._live_widget < 0:
-                return event
+        if self._live_col < 0 or self._live_widget < 0:
+            return event
 
         # Give the active widget the first refusal for this event.
         event = self._columns[
@@ -1272,7 +1275,7 @@ class Layout(object):
                         self._frame._data[widget.name] = widget.value
                 else:
                     invalid.append(widget.name)
-        if len(invalid) > 0:
+        if invalid:
             raise InvalidFields(invalid)
 
     def find_widget(self, name):
@@ -1434,8 +1437,10 @@ class Widget(with_metaclass(ABCMeta, object)):
         """
         Whether this widget is visible on the Canvas or not.
         """
-        return not (self._y + self._h <= self._frame.canvas.start_line or
-                    self._y >= self._frame.canvas.start_line + self._frame.canvas.height)
+        return (
+            self._y + self._h > self._frame.canvas.start_line
+            and self._y < self._frame.canvas.start_line + self._frame.canvas.height
+        )
 
     @property
     def disabled(self):
@@ -1540,12 +1545,22 @@ class Widget(with_metaclass(ABCMeta, object)):
             return False
 
         # Check for any overlap
-        if self._y <= event.y < self._y + self._h:
-            if ((include_label and self._x <= event.x < self._x + self._w - width_modifier) or
-                    (self._x + self._offset <= event.x < self._x + self._w - width_modifier)):
-                return True
-
-        return False
+        return bool(
+            self._y <= event.y < self._y + self._h
+            and (
+                (
+                    (
+                        include_label
+                        and self._x <= event.x < self._x + self._w - width_modifier
+                    )
+                    or (
+                        self._x + self._offset
+                        <= event.x
+                        < self._x + self._w - width_modifier
+                    )
+                )
+            )
+        )
 
     def blur(self):
         """
@@ -1768,8 +1783,8 @@ class Divider(Widget):
         return event
 
     def update(self, frame_no):
-        (colour, attr, bg) = self._frame.palette["borders"]
         if self._draw_line:
+            (colour, attr, bg) = self._frame.palette["borders"]
             self._frame.canvas.print_at(self._line_char * self._w,
                                         self._x,
                                         self._y + (self._h // 2),
@@ -1900,15 +1915,16 @@ class Text(Widget):
                 return event
         elif isinstance(event, MouseEvent):
             # Mouse event - rebase coordinates to Frame context.
-            if event.buttons != 0:
-                if self.is_mouse_over(event, include_label=False):
-                    self._column = (self._start_column +
-                                    _get_offset(self._value[self._start_column:],
-                                                event.x - self._x - self._offset,
-                                                self._frame.canvas.unicode_aware))
-                    self._column = min(len(self._value), self._column)
-                    self._column = max(0, self._column)
-                    return None
+            if event.buttons != 0 and self.is_mouse_over(
+                event, include_label=False
+            ):
+                self._column = (self._start_column +
+                                _get_offset(self._value[self._start_column:],
+                                            event.x - self._x - self._offset,
+                                            self._frame.canvas.unicode_aware))
+                self._column = min(len(self._value), self._column)
+                self._column = max(0, self._column)
+                return None
             # Ignore other mouse events.
             return event
         else:
@@ -2016,11 +2032,12 @@ class CheckBox(Widget):
                 return event
         elif isinstance(event, MouseEvent):
             # Mouse event - rebase coordinates to Frame context.
-            if event.buttons != 0:
-                if self.is_mouse_over(event, include_label=False):
-                    # Use property to trigger events.
-                    self.value = not self._value
-                    return None
+            if event.buttons != 0 and self.is_mouse_over(
+                event, include_label=False
+            ):
+                # Use property to trigger events.
+                self.value = not self._value
+                return None
             # Ignore other mouse events.
             return event
         else:
@@ -2112,12 +2129,13 @@ class RadioButtons(Widget):
                 return event
         elif isinstance(event, MouseEvent):
             # Mouse event - rebase coordinates to Frame context.
-            if event.buttons != 0:
-                if self.is_mouse_over(event, include_label=False):
-                    # Use property to trigger events.
-                    self._selection = event.y - self._y
-                    self.value = self._options[self._selection][1]
-                    return None
+            if event.buttons != 0 and self.is_mouse_over(
+                event, include_label=False
+            ):
+                # Use property to trigger events.
+                self._selection = event.y - self._y
+                self.value = self._options[self._selection][1]
+                return None
             # Ignore other mouse events.
             return event
         else:
@@ -2570,9 +2588,8 @@ class _BaseListBox(with_metaclass(ABCMeta, Widget)):
                     return None
 
                 # Check for scroll bar interactions:
-                if self._scroll_bar:
-                    if self._scroll_bar.process_event(event):
-                        return None
+                if self._scroll_bar and self._scroll_bar.process_event(event):
+                    return None
 
             # Ignore other mouse events.
             return event
@@ -2678,10 +2695,7 @@ class _BaseListBox(with_metaclass(ABCMeta, Widget)):
         :returns: the options list parsed and converted to ColouredText as needed.
         """
         if self._parser:
-            parsed_value = []
-            for option in options:
-                parsed_value.append((self._parse_option(option[0]), option[1]))
-            return parsed_value
+            return [(self._parse_option(option[0]), option[1]) for option in options]
         else:
             return options
 
@@ -2764,7 +2778,7 @@ class ListBox(_BaseListBox):
             # there's not much else I can do here.
             self._start_line = self._line - (height // 2)
         start_line = self._start_line
-        if self._start_line < 0:
+        if start_line < 0:
             y_offset = -self._start_line
             start_line = 0
         for i, (text, _) in enumerate(self._options):
@@ -2905,8 +2919,14 @@ class MultiColumnListBox(_BaseListBox):
         if isinstance(width, float):
             return int(max_width * width)
         if width == 0:
-            width = (max_width - sum(self._spacing) -
-                     sum([self._get_width(x, max_width) for x in self._columns if x != 0]))
+            width = (
+                max_width
+                - sum(self._spacing)
+                - sum(
+                    self._get_width(x, max_width) for x in self._columns if x != 0
+                )
+            )
+
         return width
 
     def _print_cell(self, space, text, align, width, x, y, fg, attr, bg):
@@ -3252,11 +3272,12 @@ class Button(Widget):
                 # Ignore any other key press.
                 return event
         elif isinstance(event, MouseEvent):
-            if event.buttons != 0:
-                if (self._x <= event.x < self._x + self._w and
-                        self._y <= event.y < self._y + self._h):
-                    self._on_click()
-                    return None
+            if event.buttons != 0 and (
+                self._x <= event.x < self._x + self._w
+                and self._y <= event.y < self._y + self._h
+            ):
+                self._on_click()
+                return None
         # Ignore other events
         return event
 
@@ -3300,9 +3321,11 @@ class PopUpDialog(Frame):
 
         # Decide on optimum width of the dialog.  Limit to 2/3 the screen width.
         string_len = wcswidth if screen.unicode_aware else len
-        width = max([string_len(x) for x in text.split("\n")])
-        width = max(width + 2,
-                    sum([string_len(x) + 4 for x in buttons]) + len(buttons) + 5)
+        width = max(string_len(x) for x in text.split("\n"))
+        width = max(
+            width + 2, sum(string_len(x) + 4 for x in buttons) + len(buttons) + 5
+        )
+
         width = min(width, screen.width * 2 // 3)
 
         # Figure out the necessary message and allow for buttons and borders
@@ -3513,9 +3536,10 @@ class TimePicker(Widget):
                 if event.key_code in [Screen.ctrl("M"), Screen.ctrl("J"), ord(" ")]:
                     event = None
             elif isinstance(event, MouseEvent):
-                if event.buttons != 0:
-                    if self.is_mouse_over(event, include_label=False):
-                        event = None
+                if event.buttons != 0 and self.is_mouse_over(
+                    event, include_label=False
+                ):
+                    event = None
 
             # Create the pop-up if needed
             if event is None:
@@ -3653,9 +3677,10 @@ class DatePicker(Widget):
                 if event.key_code in [Screen.ctrl("M"), Screen.ctrl("J"), ord(" ")]:
                     event = None
             elif isinstance(event, MouseEvent):
-                if event.buttons != 0:
-                    if self.is_mouse_over(event, include_label=False):
-                        event = None
+                if event.buttons != 0 and self.is_mouse_over(
+                    event, include_label=False
+                ):
+                    event = None
             if event is None:
                 self._child = _DatePickerPopup(self, year_range=self._year_range)
                 self.frame.scene.add_effect(self._child)
@@ -3797,9 +3822,10 @@ class DropdownList(Widget):
                 if event.key_code in [Screen.ctrl("M"), Screen.ctrl("J"), ord(" ")]:
                     event = None
             elif isinstance(event, MouseEvent):
-                if event.buttons != 0:
-                    if self.is_mouse_over(event, include_label=False):
-                        event = None
+                if event.buttons != 0 and self.is_mouse_over(
+                    event, include_label=False
+                ):
+                    event = None
             if event is None:
                 self._child = _DropdownPopup(self)
                 self.frame.scene.add_effect(self._child)

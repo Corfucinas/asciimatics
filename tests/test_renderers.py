@@ -463,8 +463,7 @@ class TestRenderers(unittest.TestCase):
         # Allow the fire to burn for a bit...
         renderer = Fire(5, 10, "xxxxxxxx", 1.0, 20, 8)
         output = None
-        for _ in range(100):
-            output = renderer.rendered_text
+        output = renderer.rendered_text
 
         # Output should be something like this, but we can't check exactly due
         # to the random nature of the effect and the difference in RNG between

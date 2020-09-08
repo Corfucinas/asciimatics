@@ -57,16 +57,22 @@ class GameState(object):
 
     def safe_update_x(self, new_x):
         new_x += self.x
-        if 0 <= self.y < len(self.map) and 0 <= new_x < len(self.map[0]):
-            if self.map[self.map_y][int(floor(new_x))] == "X":
-                return
+        if (
+            0 <= self.y < len(self.map)
+            and 0 <= new_x < len(self.map[0])
+            and self.map[self.map_y][int(floor(new_x))] == "X"
+        ):
+            return
         self.x = new_x
 
     def safe_update_y(self, new_y):
         new_y += self.y
-        if 0 <= new_y < len(self.map) and 0 <= self.x < len(self.map[0]):
-            if self.map[int(floor(new_y))][self.map_x] == "X":
-                return
+        if (
+            0 <= new_y < len(self.map)
+            and 0 <= self.x < len(self.map[0])
+            and self.map[int(floor(new_y))][self.map_x] == "X"
+        ):
+            return
         self.y = new_y
 
     def safe_update_angle(self, new_angle):
@@ -213,10 +219,13 @@ class RayCaster(Effect):
                     hit_side = True
 
                 # Check whether the ray has now hit a wall.
-                if 0 <= map_x < len(self._state.map[0]) and 0 <= map_y < len(self._state.map):
-                    if self._state.map[map_y][map_x] == "X":
-                        hit = True
-                        break
+                if (
+                    0 <= map_x < len(self._state.map[0])
+                    and 0 <= map_y < len(self._state.map)
+                    and self._state.map[map_y][map_x] == "X"
+                ):
+                    hit = True
+                    break
 
             # Draw wall if needed.
             if hit:
